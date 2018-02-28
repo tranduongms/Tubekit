@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Quản lý máy ảo</title>
+	<link rel="stylesheet" href="/css/bootstrap.min.css">
+</head>
+<body>
+	<div id="app" class="container">
+		<!-- Nav tabs -->
+		<ul id="mainTabs" class="nav nav-tabs" role="tablist">
+			<li role="presentation" class="active"><a href="#bots" role="tab" data-toggle="tab">Bot Manage</a></li>
+			<li role="presentation"><a href="#vpss" role="tab" data-toggle="tab">VPS List</a></li>
+		</ul>
+		<!-- Tab panes -->
+		<div class="tab-content">
+			<div role="tabpanel" class="tab-pane active" id="bots">
+				<div class="panel panel-primary">
+					<div class="panel-heading">
+							<div class="panel-title">
+								Thêm vào danh sách phát
+								<span v-if="!showAddVideo" v-on:click="showHideAddVideo" class="glyphicon glyphicon-chevron-down pull-right"></span>
+								<span v-if="showAddVideo" v-on:click="showHideAddVideo" class="glyphicon glyphicon-chevron-up pull-right"></span>
+							</div>
+					</div>
+					<div v-show="showAddVideo" class="panel-body">
+						<div class="row">
+							<div class="col-md-4">
+								<form v-on:submit.prevent="doAddKeyword" class="form">
+									<input type="text" v-model="addKeyword.keyword" class="form-control" placeholder="Nhập từ khoá tìm kiếm"></input>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" v-model="addKeyword.willLikeOrDislike"></input> Like/Dislike
+										</label>
+									</div>
+									<textarea v-model="addKeyword.comments" class="form-control" rows="6" placeholder="Nhập danh sách comment phân cách nhau bằng xuống dòng"></textarea>
+									<button type="submit" class="btn btn-default">Thêm từ khoá</button>
+								</form>				
+							</div>
+							<div class="col-md-4">
+								<form v-on:submit.prevent="doAddLink" class="form">
+									<input type="text" v-model="addLink.url" class="form-control" placeholder="Nhập link của video"></input>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" v-model="addLink.willLikeOrDislike"></input> Like/Dislike
+										</label>
+									</div>
+									<textarea v-model="addLink.comments" class="form-control" rows="6" placeholder="Nhập danh sách comment phân cách nhau bằng xuống dòng"></textarea>
+									<button type="submit" class="btn btn-default">Thêm link</button>
+								</form>				
+							</div>
+							<div class="col-md-4">
+								<form v-on:submit.prevent="doAddList" class="form">
+									<input type="text" v-model="addList.url" class="form-control" placeholder="Nhập link của danh sách phát"></input>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" v-model="addList.loop"></input> Lặp lại danh sách
+										</label>
+									</div>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" v-model="addList.shuffle"></input> Trộn danh sách
+										</label>
+									</div>
+									<div class="checkbox">
+										<label>
+											<input type="checkbox" v-model="addList.autoNext"></input> Tự động next
+										</label>
+									</div>
+									<button type="submit" class="btn btn-default">Thêm danh sách</button>
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+				<dir>
+					<button v-on:click="clearPlayedVideos" class="btn btn-warning">Xoá lịch sử phát</button>
+					<button v-on:click="clearAllErrors" class="btn btn-warning">Xoá lịch sử lỗi</button>
+				</dir>
+				<div class="row">
+					<div class="col-md-12">
+						<table class="table">
+							<thead>
+								<tr>
+									<th>#</th>
+									<th>Tên bot</th>
+									<th>Email hiện tại</th>
+									<th>Đang phát</th>
+									<th>Video sẽ phát</th>
+									<th>Video đã phát</th>
+									<th>Lỗi</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr v-for="(bot, index) in bots" v-on:click="showHideDetail(bot)" :class="{ danger: ((bot.errors.length>0) || !bot.loginEmail), info: bot.ready }">
+									<th scope="row">{{ index + 1 }}</th>
+									<td>{{ bot.vpsName + ' - ' + bot.browserName }}</td>
+									<td v-if="!bot.showDetail">{{ bot.loginEmail || "Chưa đăng nhập"}}</td>
+									<td v-if="!bot.showDetail">
+										<play-item v-if="bot.currentVideo" :item="bot.currentVideo"></play-item>
+									</td>
+									<td v-if="!bot.showDetail">{{ bot.nextVideos.length }}</td>
+									<td v-if="!bot.showDetail">{{ bot.playedVideos.length }}</td>
+									<td v-if="!bot.showDetail">{{ bot.errors.length }}</td>
+									<td v-if="bot.showDetail" colspan="6">
+										<h5>Video Đang phát</h5>
+										<ul class="list-group">
+											<li v-if="bot.currentVideo" class="list-group-item">
+												<play-item :item="bot.currentVideo"></play-item>
+											</li>
+										</ul>
+										<h5>Video sẽ phát</h5>
+										<ul class="list-group">
+											<li class="list-group-item" v-for="(playItem, index) in bot.nextVideos">
+												<play-item :item="playItem"></play-item>
+											</li>
+										</ul>
+										<h5>Video đã phát</h5>
+										<ul class="list-group">
+											<li class="list-group-item" v-for="(playedItem, index) in bot.playedVideos">
+												<play-item :item="playedItem"></play-item>
+											</li>
+										</ul>
+										<h5>Lỗi phát sinh</h5>
+										<ul class="list-group">
+											<li class="list-group-item" v-for="(error, index) in bot.errors">
+												{{error}}
+											</li>
+										</ul>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+			<div role="tabpanel" class="tab-pane" id="vpss">
+				<table class="table">
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>Tên VPS</th>
+							<th>IP</th>
+							<th>Lỗi</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="(vps, index) in vpss" :class="{ danger: vps.error, info: vps.started }">
+							<th scope="row">{{ index + 1 }}</th>
+							<td>{{ vps.name }}</td>
+							<td>{{ vps.ip }}</td>
+							<td>{{ vps.error }}</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<script src="/js/jquery.min.js"></script>
+	<script src="/js/bootstrap.min.js"></script>
+	<script src="/js/vue.min.js"></script>
+	<script src="/js/app.js"></script>
+</body>
+</html>
